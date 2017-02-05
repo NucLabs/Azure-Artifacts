@@ -13,6 +13,8 @@
         @{ 
             Nodename = "localhost"
             Role = "DC"
+			PSDscAllowPlainTextPassword=$true
+            PSDscAllowDomainUser = $true
         }
     )
 }
