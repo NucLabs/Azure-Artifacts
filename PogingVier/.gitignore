@@ -1,1 +1,2 @@
 azuredeploy.parameters.local.json
+Deploy-FromLocal.ps1

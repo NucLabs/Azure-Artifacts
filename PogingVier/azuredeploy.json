@@ -2,12 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "newStorageAccountName": {
-      "type": "string",
-      "metadata": {
-        "description": "The name of the new storage account created to store the VMs disks"
-      }
-    },
     "storageAccountType": {
       "type": "string",
       "allowedValues": [
@@ -20,6 +14,14 @@
         "description": "The type of the Storage Account created"
       },
       "defaultValue": "Premium_LRS"
+    },
+    "storageNamePrefix": {
+      "type": "string",
+      "maxLength": 11,
+      "defaultValue": "storage",
+      "metadata": {
+      "description": "The value to use for starting the storage account name."
+      }
     },
     "virtualNetworkName": {
       "type": "string",
@@ -158,7 +160,7 @@
     },
     "imageSKU": {
       "type": "string",
-      "defaultValue": "2012-R2-Datacenter",
+      "defaultValue": "2016Datacenter",
       "metadata": {
         "description": "Image SKU"
       }
@@ -209,6 +211,7 @@
     "adLBBE": "LBBE",
     "adPDCRDPNAT": "adPDCRDP",
     "adBDCRDPNAT": "adBDCRDP",
+    "storageName": "[concat(parameters('storageNamePrefix'), uniqueString(resourceGroup().id))]",
     "VnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
     "adSubnetRef": "[concat(variables('VnetID'),'/subnets/',parameters('adSubnetName'))]",
     "adLBName": "adLoadBalancer",
@@ -219,11 +222,14 @@
     "vnetTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet.json')]",
     "vnetwithDNSTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet-with-dns-server.json')]",
     "adPDCModulesURL": "[concat(parameters('assetLocation'),'/DSC/CreateADPDC.ps1.zip')]",
-    "adPDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC"
+    "adPDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC",
+    "ExDownloadModulesURL": "[concat(parameters('assetLocation'),'/DSC/DownLoadExchange.ps1.zip')]",
+    "ExDownloadConfigurationFunction": "DownLoadExchange.ps1\\DownLoadExchange"
+
   },
   "resources": [
     {
-      "name": "[parameters('newStorageAccountName')]",
+      "name": "[variables('storageName')]",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2016-05-01",
       "location": "[resourceGroup().location]",
@@ -363,12 +369,38 @@
       }
     },
     {
+        "type": "Microsoft.Compute/virtualMachines/extensions",
+        "name": "[concat(parameters('adPDCVMName'), '/DownLoadExchange')]",
+        "apiVersion": "2015-06-15",
+        "location": "[resourceGroup().location]",
+        "tags": {
+            "displayName": "[concat(parameters('adPDCVMName'), '/DownLoadExchange')]"
+        },
+        "dependsOn": [
+            "Microsoft.Compute/virtualMachines/extensions/UpdateVNetDNS1"
+        ],
+        "properties": {
+            "publisher": "Microsoft.Powershell",
+            "type": "DSC",
+            "typeHandlerVersion": "2.9",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+                "modulesUrl": "[variables('ExDownloadModulesURL')]",
+                "configurationFunction": "[variables('ExDownloadConfigurationFunction')]",
+                "properties": {
+                    "nodeName": "[parameters('adPDCVMName')]"
+               }
+            },
+            "protectedSettings": {}
+        }
+    },
+    {
       "name": "[parameters('adPDCVMName')]",
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2016-03-30",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts',parameters('newStorageAccountName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts',variables('storageName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces',parameters('adPDCNicName'))]",
         "[resourceId('Microsoft.Compute/availabilitySets', parameters('adAvailabilitySetName'))]",
         "[resourceId('Microsoft.Network/loadBalancers',variables('adLBName'))]"
@@ -395,7 +427,7 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts/', parameters('newStorageAccountName'))).primaryEndpoints.blob,'vhds0/','osdisk.vhd')]"
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts/', variables('storageName'))).primaryEndpoints.blob,'vhds0/','osdisk.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
