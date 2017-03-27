@@ -160,7 +160,7 @@
     },
     "imageSKU": {
       "type": "string",
-      "defaultValue": "2016Datacenter",
+      "defaultValue": "2016-Datacenter",
       "metadata": {
         "description": "Image SKU"
       }
@@ -222,10 +222,7 @@
     "vnetTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet.json')]",
     "vnetwithDNSTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet-with-dns-server.json')]",
     "adPDCModulesURL": "[concat(parameters('assetLocation'),'/DSC/CreateADPDC.ps1.zip')]",
-    "adPDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC",
-    "ExDownloadModulesURL": "[concat(parameters('assetLocation'),'/DSC/DownLoadExchange.ps1.zip')]",
-    "ExDownloadConfigurationFunction": "DownLoadExchange.ps1\\DownLoadExchange"
-
+    "adPDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC"
   },
   "resources": [
     {
@@ -367,32 +364,6 @@
           }
         ]
       }
-    },
-    {
-        "type": "Microsoft.Compute/virtualMachines/extensions",
-        "name": "[concat(parameters('adPDCVMName'), '/DownLoadExchange')]",
-        "apiVersion": "2015-06-15",
-        "location": "[resourceGroup().location]",
-        "tags": {
-            "displayName": "[concat(parameters('adPDCVMName'), '/DownLoadExchange')]"
-        },
-        "dependsOn": [
-            "Microsoft.Compute/virtualMachines/extensions/UpdateVNetDNS1"
-        ],
-        "properties": {
-            "publisher": "Microsoft.Powershell",
-            "type": "DSC",
-            "typeHandlerVersion": "2.9",
-            "autoUpgradeMinorVersion": true,
-            "settings": {
-                "modulesUrl": "[variables('ExDownloadModulesURL')]",
-                "configurationFunction": "[variables('ExDownloadConfigurationFunction')]",
-                "properties": {
-                    "nodeName": "[parameters('adPDCVMName')]"
-               }
-            },
-            "protectedSettings": {}
-        }
     },
     {
       "name": "[parameters('adPDCVMName')]",
