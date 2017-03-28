@@ -12,6 +12,9 @@ Starting point is the only working Azure template I found that works: [active-di
 
 I reduced it to create only one DC
 
+History:
+2017-3-28: DC installs and downloads Exchange CU4 ISO, which is mounted and shared
+
 
 
 
