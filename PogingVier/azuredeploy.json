@@ -65,7 +65,13 @@
       },
       "defaultValue": "10.0.0.4"
     },
-    "publicIPAddressName": {
+    "ExchangeNicIPAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "The IP address of the new AD PDC"
+      },
+      "defaultValue": "10.0.0.5"
+    },    "publicIPAddressName": {
       "type": "string",
       "metadata": {
         "description": "The name of the public IP address used by the Load Balancer"
@@ -225,6 +231,79 @@
     "adPDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC"
   },
   "resources": [
+    {
+    "apiVersion": "2015-06-15",
+    "type": "Microsoft.Compute/virtualMachines",
+    "name": "ExchangeVM1",
+    "location": "[resourceGroup().location]",
+    "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts',variables('storageName'))]",
+        "Microsoft.Network/networkInterfaces/ExchangeNIC"
+    ],
+    "tags": {
+        "displayName": "ExchangeVM1"
+    },
+    "properties": {
+        "hardwareProfile": {
+            "vmSize": "Standard_DS3_v2"
+        },
+        "osProfile": {
+            "computerName": "ExchangeVM1",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+            "imageReference": {
+                "publisher": "MicrosoftWindowsServer",
+                "offer": "WindowsServer",
+                "sku": "2016-Datacenter",
+                "version": "latest"
+            },
+            "osDisk": {
+                "name": "WindowsVM1OSDisk",
+                "vhd": {
+                    "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts/', variables('storageName'))).primaryEndpoints.blob,'vhds0/','WindowsVM1-OSDisk.vhd')]"
+                },
+                "caching": "ReadWrite",
+                "createOption": "FromImage"
+            }
+        },
+        "networkProfile": {
+            "networkInterfaces": [
+                {
+                    "id": "[resourceId('Microsoft.Network/networkInterfaces', 'ExchangeNIC')]"
+                }
+            ]
+        }
+    }
+},
+    {
+        "apiVersion": "2015-06-15",
+        "type": "Microsoft.Network/networkInterfaces",
+        "name": "ExchangeNIC",
+        "location": "[resourceGroup().location]",
+        "tags": {
+            "displayName": "ExchangeNIC"
+        },
+        "dependsOn": [
+            "Microsoft.Resources/deployments/VNet",
+            "[concat('Microsoft.Network/loadBalancers/',variables('adLBName'))]"
+        ],
+        "properties": {
+            "ipConfigurations": [
+                {
+                    "name": "ipconfig1",
+                    "properties": {
+                        "privateIPAllocationMethod": "Static",
+                        "privateIPAddress": "[parameters('ExchangeNicIPAddress')]",
+                        "subnet": {
+                            "id": "[variables('adSubnetRef')]"
+                        }
+                    }
+                }
+            ]
+        }
+    },
     {
       "name": "[variables('storageName')]",
       "type": "Microsoft.Storage/storageAccounts",
