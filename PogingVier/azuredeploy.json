@@ -20,7 +20,7 @@
       "maxLength": 11,
       "defaultValue": "storage",
       "metadata": {
-      "description": "The value to use for starting the storage account name."
+        "description": "The value to use for starting the storage account name."
       }
     },
     "virtualNetworkName": {
@@ -71,7 +71,8 @@
         "description": "The IP address of the new AD PDC"
       },
       "defaultValue": "10.0.0.5"
-    },    "publicIPAddressName": {
+    },
+    "publicIPAddressName": {
       "type": "string",
       "metadata": {
         "description": "The name of the public IP address used by the Load Balancer"
@@ -96,7 +97,14 @@
       },
       "defaultValue": "adPDC"
     },
-    "adminUsername": {
+    "ExchVMName": {
+      "type": "string",
+      "metadata": {
+        "description": "The computer name of the Exchange Server"
+      },
+      "defaultValue": "[parameters()]]"
+    },
+      "adminUsername": {
       "type": "string",
       "metadata": {
         "description": "The name of the Administrator of the new VM and Domain"
@@ -228,91 +236,129 @@
     "vnetTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet.json')]",
     "vnetwithDNSTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet-with-dns-server.json')]",
     "adPDCModulesURL": "[concat(parameters('assetLocation'),'/DSC/CreateADPDC.ps1.zip')]",
-    "adPDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC"
+    "adPDCConfigurationFunction": "ConfigureExchange.ps1\\ConfigureExchange",
+    "ExchModulesURL": "[concat(parameters('assetLocation'),'/DSC/ConfigureExchange.ps1.zip')]",
+    "ExchConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC"
   },
   "resources": [
     {
-    "apiVersion": "2015-06-15",
-    "type": "Microsoft.Compute/virtualMachines",
-    "name": "ExchangeVM1",
-    "location": "[resourceGroup().location]",
-    "dependsOn": [
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('ExchVMName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts',variables('storageName'))]",
-        "Microsoft.Network/networkInterfaces/ExchangeNIC"
-    ],
-    "tags": {
-        "displayName": "ExchangeVM1"
-    },
-    "properties": {
+        "Microsoft.Network/networkInterfaces/ExchangeNIC",
+        "Microsoft.Resources/deployments/UpdateVNetDNS1"
+      ],
+      "tags": {
+        "displayName": "[parameters('ExchVMName')]"
+      },
+      "properties": {
         "hardwareProfile": {
-            "vmSize": "Standard_DS3_v2"
+          "vmSize": "Standard_DS3_v2"
         },
         "osProfile": {
-            "computerName": "ExchangeVM1",
+          "computerName": "[parameters('ExchVMName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
-            "imageReference": {
-                "publisher": "MicrosoftWindowsServer",
-                "offer": "WindowsServer",
-                "sku": "2016-Datacenter",
-                "version": "latest"
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "WindowsVM1OSDisk",
+            "vhd": {
+              "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts/', variables('storageName'))).primaryEndpoints.blob,'vhds0/','WindowsVM1-OSDisk.vhd')]"
             },
-            "osDisk": {
-                "name": "WindowsVM1OSDisk",
-                "vhd": {
-                    "uri": "[concat(reference(resourceId('Microsoft.Storage/storageAccounts/', variables('storageName'))).primaryEndpoints.blob,'vhds0/','WindowsVM1-OSDisk.vhd')]"
-                },
-                "caching": "ReadWrite",
-                "createOption": "FromImage"
-            }
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
         },
         "networkProfile": {
-            "networkInterfaces": [
-                {
-                    "id": "[resourceId('Microsoft.Network/networkInterfaces', 'ExchangeNIC')]"
-                }
-            ]
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'ExchangeNIC')]"
+            }
+          ]
         }
-    }
-},
+      },
+      "resources": [
+        {
+          "name": "[concat(parameters('ExchVMName'),'/ConfigureExchange')]",
+          "type": "Microsoft.Compute/virtualMachines/extensions",
+          "apiVersion": "2016-03-30",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Compute/virtualMachines', parameters('ExchVMName'))]"
+          ],
+          "properties": {
+            "publisher": "Microsoft.Powershell",
+            "type": "DSC",
+            "typeHandlerVersion": "2.21",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "ModulesUrl": "[variables('ExchModulesURL')]",
+              "ConfigurationFunction": "[variables('ExchConfigurationFunction')]",
+              "Properties": {
+                "DomainName": "[parameters('domainName')]",
+                "ComputerName": "[parameters('ExchVMName')]",
+                "AdminCreds": {
+                  "UserName": "[parameters('adminUserName')]",
+                  "Password": "PrivateSettingsRef:AdminPassword"
+                }
+              }
+            },
+            "protectedSettings": {
+              "Items": {
+                "AdminPassword": "[parameters('adminPassword')]"
+              }
+            }
+          }
+        }
+      ]
+    },
     {
-        "apiVersion": "2015-06-15",
-        "type": "Microsoft.Network/networkInterfaces",
-        "name": "ExchangeNIC",
-        "location": "[resourceGroup().location]",
-        "tags": {
-            "displayName": "ExchangeNIC"
-        },
-        "dependsOn": [
-            "Microsoft.Resources/deployments/VNet",
-            "[concat('Microsoft.Network/loadBalancers/',variables('adLBName'))]"
-        ],
-        "properties": {
-            "ipConfigurations": [
-                {
-                    "name": "ipconfig1",
-                    "properties": {
-                        "privateIPAllocationMethod": "Static",
-                        "privateIPAddress": "[parameters('ExchangeNicIPAddress')]",
-                        "subnet": {
-                            "id": "[variables('adSubnetRef')]"
-                        }
-                    }
-                }
-            ]
-        }
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "ExchangeNIC",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "ExchangeNIC"
+      },
+      "dependsOn": [
+        "Microsoft.Resources/deployments/VNet",
+        "[concat('Microsoft.Network/loadBalancers/',variables('adLBName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[parameters('ExchangeNicIPAddress')]",
+              "subnet": {
+                "id": "[variables('adSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
     },
     {
       "name": "[variables('storageName')]",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2016-05-01",
       "location": "[resourceGroup().location]",
-      "properties": {
+      "properties": {},
+      "sku": {
+        "name": "[parameters('storageAccountType')]"
       },
-      "sku":{"name":"[parameters('storageAccountType')]"},
-      "kind":"Storage"
+      "kind": "Storage"
     },
     {
       "name": "[parameters('publicIPAddressName')]",
