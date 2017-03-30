@@ -235,9 +235,9 @@
     "adBEAddressPoolID": "[concat(variables('adlbID'),'/backendAddressPools/',variables('adLBBE'))]",
     "vnetTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet.json')]",
     "vnetwithDNSTemplateUri": "[concat(parameters('assetLocation'),'/nestedtemplates/vnet-with-dns-server.json')]",
-    "adPDCModulesURL": "[concat(parameters('assetLocation'),'/DSCAD/CreateADPDC.ps1.zip')]",
+    "adPDCModulesURL": "[concat(parameters('assetLocation'),'/DSC/CreateADPDC.ps1.zip')]",
     "adPDCConfigurationFunction": "CreateADPDC.ps1\\CreateADPDC",
-    "ExchModulesURL": "[concat(parameters('assetLocation'),'/DSCExchange/ConfigureExchange.ps1.zip')]",
+    "ExchModulesURL": "[concat(parameters('assetLocation'),'/DSC/ConfigureExchange.ps1.zip')]",
     "ExchConfigurationFunction": "ConfigureExchange.ps1\\ConfigureExchange"   
   },
   "resources": [
