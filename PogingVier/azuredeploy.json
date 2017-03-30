@@ -156,7 +156,7 @@
       "metadata": {
         "description": "The size of the VM Created"
       },
-      "defaultValue": "Standard_DS2_v2"
+      "defaultValue": "Standard_DS1_v2"
     },
     "imagePublisher": {
       "type": "string",
