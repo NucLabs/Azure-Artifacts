@@ -306,6 +306,7 @@
               "ConfigurationFunction": "[variables('ExchConfigurationFunction')]",
               "Properties": {
                 "DomainName": "[parameters('domainName')]",
+                "PDCName": "[parameters('adPDCVMName')]",
                 "ComputerName": "[parameters('ExchVMName')]",
                 "AdminCreds": {
                   "UserName": "[parameters('adminUserName')]",
