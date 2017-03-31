@@ -190,6 +190,11 @@ Configuration ConfigureExchange {
             Name = 'Windows-Identity-Foundation'
         }
 
+        WindowsFeature NETWCFHTTPActivation45 {
+            Ensure = 'Present'
+            Name = 'NET-WCF-HTTP-Activation45'
+        }
+
         WindowsFeature RSATADDS {
             Ensure = 'Present'
             Name = 'RSAT-ADDS'
