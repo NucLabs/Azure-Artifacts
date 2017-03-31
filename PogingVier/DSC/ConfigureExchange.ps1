@@ -145,11 +145,6 @@ Configuration ConfigureExchange {
             Name = 'Web-Metabase'
         }
 
-        WindowsFeature WebMgmtConsole {
-            Ensure = 'Present'
-            Name = 'Web-Mgmt-Console'
-        }
-
         WindowsFeature WebMgmtService {
             Ensure = 'Present'
             Name = 'Web-Mgmt-Service'
