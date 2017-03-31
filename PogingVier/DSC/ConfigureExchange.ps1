@@ -210,5 +210,10 @@ Configuration ConfigureExchange {
             Name = "AfterExchangeInstall"
             DependsOn = '[xExchInstall]InstallExchange'
         }
+
+        LocalConfigurationManager {
+            ConfigurationMode = 'ApplyOnly'
+            RebootNodeIfNeeded = $true
+        }
     }
 }
