@@ -217,7 +217,7 @@
       "metadata": {
         "description": "The location of resources such as templates and DSC modules that the script is dependent"
       },
-      "defaultValue": "https://raw.githubusercontent.com/NucLabs/Azure-Artifacts/DomainMembers/PogingVier"
+      "defaultValue": "https://raw.githubusercontent.com/NucLabs/Azure-Artifacts/master/PogingVier"
     }
   },
   "variables": {
